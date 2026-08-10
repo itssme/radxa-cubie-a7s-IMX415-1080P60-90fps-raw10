@@ -1,0 +1,12 @@
+The file src/imx415_mipi.c is derived from the Radxa/Allwinner Linux BSP.
+
+The original source contains:
+
+SPDX-License-Identifier: GPL-2.0-or-later
+Copyright(c) 2020 - 2023 Allwinner Technology Co.,Ltd.
+
+Original copyright and license notices are preserved.
+
+This repository is experimental software intended for researchers and
+experienced developers. It is provided without warranty and is used
+entirely at the user's own risk.
