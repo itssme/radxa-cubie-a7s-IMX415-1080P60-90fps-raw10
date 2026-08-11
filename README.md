@@ -1,4 +1,4 @@
-# Radxa Cubie A7S IMX415 1080p60 RAW10
+# Radxa Cubie A7S IMX415 1080p90 RAW10
 
 Experimental IMX415 Linux camera driver configuration for the
 Radxa Cubie A7S / Allwinner A733.
@@ -11,13 +11,13 @@ Tested successfully with:
 - SoC: Allwinner A733
 - Camera: Radxa 4K Camera / Sony IMX415
 - Resolution: 1920x1080
-- Frame rate: 60 fps
+- Frame rate: 90 fps
 - Full sensor field of view
 - IMX415 2x2 binning
 - RAW10
 - CSI-2 data type: 0x2b
 - CSI-2 lanes: 4
-- CSI-2 rate: 891 Mbps per lane
+- CSI-2 rate: 1485 Mbps per lane
 - Sensor clock: 27 MHz
 - Receiver time_hs: 0x20
 - Receiver deskew: 0x02
@@ -25,7 +25,7 @@ Tested successfully with:
 
 Expected healthy MIPI receiver state:
 
-    mipi_bps:       891 Mbps
+    mipi_bps:       1485 Mbps
     lane_num:       4 lane
     int_pending:    0x4f (ok)
     cur_data_type:  0x2b (RAW10)
@@ -117,9 +117,9 @@ During an active camera stream, the MIPI status can also be inspected with:
 Five seconds of unencoded NV12:
 
     gst-launch-1.0 -e \
-      v4l2src device=/dev/video0 en-awisp=1 en-largemode=0 num-buffers=300 \
-      ! video/x-raw,format=NV12,width=1920,height=1080,framerate=60/1 \
-      ! filesink location=imx415-1080p60-nv12.raw sync=false
+      v4l2src device=/dev/video0 en-awisp=1 en-largemode=0 num-buffers=450 \
+      ! video/x-raw,format=NV12,width=1920,height=1080,framerate=90/1 \
+      ! filesink location=imx415-1080p90-nv12.raw sync=false
 
 Playback on another machine:
 
@@ -127,8 +127,8 @@ Playback on another machine:
       -f rawvideo \
       -pixel_format nv12 \
       -video_size 1920x1080 \
-      -framerate 60 \
-      imx415-1080p60-nv12.raw
+      -framerate 90 \
+      imx415-1080p90-nv12.raw
 
 ## License
 

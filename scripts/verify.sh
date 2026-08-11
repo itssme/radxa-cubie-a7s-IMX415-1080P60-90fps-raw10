@@ -11,7 +11,7 @@ v4l2-ctl \
     --list-subdev-mbus-codes pad=0
 
 echo
-echo "===== 1080P60 ====="
+echo "===== 1080P90 ====="
 v4l2-ctl \
     -d /dev/v4l-subdev0 \
     --list-subdev-frameintervals \
@@ -21,9 +21,9 @@ echo
 echo "Expected:"
 echo "  RAW10:       0x300e"
 echo "  Resolution:  1920x1080"
-echo "  Frame rate:  60 fps"
+echo "  Frame rate:  90 fps"
 echo
 echo "During an active stream, expected MIPI status:"
-echo "  mipi_bps:       891 Mbps"
+echo "  mipi_bps:       1485 Mbps"
 echo "  int_pending:    0x4f (ok)"
 echo "  cur_data_type:  0x2b (RAW10)"
