@@ -1099,11 +1099,56 @@ static int sensor_g_exp(struct v4l2_subdev *sd, __s32 *value)
 	return 0;
 }
 static int imx415_mipi_sensor_vts;
+
+/*
+ * Optional forced exposure for the 1080p90 mode.
+ *
+ * Units are 1/16 of one sensor line.
+ * At HMAX=366 / ~74.25 MHz:
+ *
+ *   3232  ~= 1 ms
+ *   6464  ~= 2 ms
+ *   12928 ~= 4 ms
+ *
+ * 0 leaves exposure unrestricted.
+ */
+/*
+ * Build-time default exposure.
+ *
+ * Override while building with:
+ *
+ *   -DIMX415_FORCE_EXP_16LINE_DEFAULT=3232
+ *
+ * Examples:
+ *     0 = normal/unrestricted
+ *  3232 = ~1 ms
+ *  6464 = ~2 ms
+ * 12928 = ~4 ms
+ * 19392 = ~6 ms
+ */
+#ifndef IMX415_FORCE_EXP_16LINE_DEFAULT
+#define IMX415_FORCE_EXP_16LINE_DEFAULT 0
+#endif
+
+static unsigned int force_exp_16line =
+	IMX415_FORCE_EXP_16LINE_DEFAULT;
+
+module_param(force_exp_16line, uint, 0644);
+MODULE_PARM_DESC(force_exp_16line,
+	"Force exposure in 1/16-line units; 0=unrestricted");
+
 static int sensor_s_exp(struct v4l2_subdev *sd, unsigned int exp_val)
 {
 	data_type explow, exphigh, expmid;
 	int exptime;
 	struct sensor_info *info = to_state(sd);
+
+	if (force_exp_16line && imx415_mipi_sensor_vts > 4) {
+		exp_val = force_exp_16line;
+
+		if ((exp_val >> 4) > imx415_mipi_sensor_vts - 4)
+			exp_val = (imx415_mipi_sensor_vts - 4) << 4;
+	}
 	if (exp_val) {
 		exptime = imx415_mipi_sensor_vts - (exp_val >> 4);
 		exphigh = (unsigned char)((0x00f0000 & exptime) >> 16);
@@ -1371,7 +1416,7 @@ static int sensor_init(struct v4l2_subdev *sd, u32 val)
 	info->gain = 0;
 
 	info->tpf.numerator = 1;
-	info->tpf.denominator = 90;	/* 90fps */
+	info->tpf.denominator = 90;	/* 60fps test */
 
 	return 0;
 }
