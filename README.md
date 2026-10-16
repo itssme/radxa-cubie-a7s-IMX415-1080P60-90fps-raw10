@@ -364,9 +364,28 @@ installing `imx415_mipi` alone does not install this shared VIN correction.
 Validation: rebuilt successfully against `5.15.147-21-a733`; focused stride
 checks cover both corrected formats and unchanged other-format calculations.
 The source commit is `74086f23` on `eudis-nv12-stride` in the development
-board's `/home/radxa/imx477-build` checkout. The patched kernel module has
-not yet been installed or capture-tested. The clean image and timing evidence
-above used an explicit userspace stride correction with the original module.
+board's `/home/radxa/imx477-build` checkout. The patched kernel module was subsequently installed at the existing
+`/lib/modules/5.15.147-21-a733/kernel/bsp/drivers/vin/vin_v4l2.ko.xz`
+path, followed by `depmod -a` and a successful idle-camera module reload.
+Loaded and installed srcversion both equal `68FE7D89828976F2BBFEDA7`.
+The boot initramfs contains no VIN module, so the persistent root-filesystem
+module will be selected on next boot; no initramfs replacement was necessary.
+A full reboot has not been tested in this deployment.
+
+Post-install capture without the userspace workaround reports strides
+1920/1920 and unchanged plane sizes 2073600/1036800. A 900-frame direct
+capture had zero sequence gaps; after 5 s warmup it measured 90.00395 fps,
+11.110624 ms mean interval, 11.17916 ms P99 and 11.198 ms maximum.
+The original GStreamer NV12-to-JPEG pipeline also produces a clean image,
+without the duplicated red subject or horizontal color stripes.
+The sensor remains at 1080p90 with approximately 3 ms forced exposure.
+
+Installed compressed-module SHA256:
+`1dc5b751bcc4fbd2aa57096101826b317a3a211f6e511e50d3968eaeff7db66b`.
+The board's previous module is preserved at
+`/home/radxa/eudis-bringup/camera-backup/vin-before-stride-20261016-012851.ko.xz`.
+To roll back, restore it to the module path above, run `depmod -a`, and
+reload VIN while idle (or reboot).
 
 For deployment, back up the existing `vin_v4l2` module, install the rebuilt
 module at its existing module path, run `depmod -a`, and reload it while the
