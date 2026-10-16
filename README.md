@@ -333,3 +333,44 @@ SPDX-License-Identifier: GPL-2.0-or-later
 Original copyright and license notices are retained.
 
 This repository is distributed under GPL-2.0-or-later.
+
+## NV12 preview color corruption: shared VIN stride fix
+
+On 2026-10-16, a 1080p90 AWISP capture exposed incorrect NV12M metadata in
+`vin_video.c`: Y/UV strides were reported as 1920/960 bytes, although the UV
+plane actually contains 540 rows of 1920 bytes. JPEG consumers trusting that
+stride produced displaced translucent colors and horizontal stripes. The Y
+plane was unaffected. Correctly interpreting the same raw buffer removed the
+artifacts; direct V4L2 capture delivered 900 frames with zero sequence gaps
+and 90.0033 fps after warmup at approximately 3 ms exposure.
+
+`patches/0001-vin-fix-nv12m-chroma-stride.patch` fixes NV12M and NV21M stride
+reporting in format negotiation and queue setup. Plane sizes and sensor mode
+registers are unchanged. This is a shared VIN fix, not a sensor-driver change.
+It applies to the BSP revision pinned in `scripts/build.sh` as well as the
+IMX477-derived BSP checkout used on the development board.
+
+Build it against the running kernel headers using an existing BSP checkout:
+
+```sh
+./scripts/build-vin.sh /path/to/allwinner-bsp
+```
+
+The script applies the patch (or detects it already applied), builds VIN, and
+writes `dist/$(uname -r)/vin_v4l2.ko{,.xz}`. It never resets the checkout or
+installs a module. The sensor build/install scripts remain sensor-only;
+installing `imx415_mipi` alone does not install this shared VIN correction.
+
+Validation: rebuilt successfully against `5.15.147-21-a733`; focused stride
+checks cover both corrected formats and unchanged other-format calculations.
+The source commit is `74086f23` on `eudis-nv12-stride` in the development
+board's `/home/radxa/imx477-build` checkout. The patched kernel module has
+not yet been installed or capture-tested. The clean image and timing evidence
+above used an explicit userspace stride correction with the original module.
+
+For deployment, back up the existing `vin_v4l2` module, install the rebuilt
+module at its existing module path, run `depmod -a`, and reload it while the
+camera is idle (or reboot). Then confirm both negotiated strides are 1920,
+plane sizes remain 2073600/1036800, and a normal GStreamer JPEG capture is
+clean without a userspace override. Preserve a rollback copy of the original
+module. No reduction to 60 fps is needed to address this layout error.

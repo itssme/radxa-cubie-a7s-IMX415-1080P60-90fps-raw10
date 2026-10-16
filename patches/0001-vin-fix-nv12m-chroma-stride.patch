@@ -1,0 +1,67 @@
+From 74086f2353afe9c3f6c66ca5a78957996772d61b Mon Sep 17 00:00:00 2001
+From: itssme <itssme3000@gmail.com>
+Date: Fri, 16 Oct 2026 01:25:52 +0000
+Subject: [PATCH] vin: report full chroma row stride for NV12M and NV21M
+
+---
+ drivers/vin/vin-video/vin_video.c | 30 ++++++++++++++++++++++++++----
+ 1 file changed, 26 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/vin/vin-video/vin_video.c b/drivers/vin/vin-video/vin_video.c
+index cee2c9c8..42368743 100644
+--- a/drivers/vin/vin-video/vin_video.c
++++ b/drivers/vin/vin-video/vin_video.c
+@@ -489,6 +489,20 @@ static int lbc_mode_select(struct dma_lbc_cmp *lbc_cmp, unsigned int fourcc)
+ 	return 0;
+ }
+ 
++/* NV12M/NV21M depth[1] describes plane size per full-resolution pixel.
++ * Each chroma row contains interleaved pairs and is width bytes long;
++ * vertical subsampling halves the row count, not the row stride.
++ */
++static unsigned int vin_plane_bytesperline(unsigned int fourcc,
++		unsigned int width, unsigned int depth, unsigned int plane)
++{
++	if (plane == 1 && (fourcc == V4L2_PIX_FMT_NV12M ||
++			  fourcc == V4L2_PIX_FMT_NV21M))
++		return width;
++
++	return width * depth / 8;
++}
++
+ /*
+  * Videobuf operations
+   */
+@@ -502,9 +516,15 @@ static int queue_setup(struct vb2_queue *vq,
+ 	int wth;
+ 	int i;
+ 
+-	cap->frame.bytesperline[0] = cap->frame.o_width * cap->frame.fmt.depth[0] / 8;
+-	cap->frame.bytesperline[1] = cap->frame.o_width * cap->frame.fmt.depth[1] / 8;
+-	cap->frame.bytesperline[2] = cap->frame.o_width * cap->frame.fmt.depth[2] / 8;
++	cap->frame.bytesperline[0] = vin_plane_bytesperline(
++		cap->frame.fmt.fourcc, cap->frame.o_width,
++		cap->frame.fmt.depth[0], 0);
++	cap->frame.bytesperline[1] = vin_plane_bytesperline(
++		cap->frame.fmt.fourcc, cap->frame.o_width,
++		cap->frame.fmt.depth[1], 1);
++	cap->frame.bytesperline[2] = vin_plane_bytesperline(
++		cap->frame.fmt.fourcc, cap->frame.o_width,
++		cap->frame.fmt.depth[2], 2);
+ 
+ #if VIN_FALSE
+ 	size = cap->frame.o_width * cap->frame.o_height;
+@@ -1282,7 +1302,9 @@ static int __vin_set_fmt(struct vin_core *vinc, struct v4l2_format *f)
+ 	pixm->num_planes = vinc->vid_cap.frame.fmt.memplanes;
+ 
+ 	for (i = 0; i < pixm->num_planes; ++i) {
+-		pixm->plane_fmt[i].bytesperline = f->fmt.pix_mp.width * cap->frame.fmt.depth[i] / 8;
++		pixm->plane_fmt[i].bytesperline = vin_plane_bytesperline(
++			cap->frame.fmt.fourcc, f->fmt.pix_mp.width,
++			cap->frame.fmt.depth[i], i);
+ 		pixm->plane_fmt[i].sizeimage = f->fmt.pix_mp.width * f->fmt.pix_mp.height * cap->frame.fmt.depth[i] / 8;
+ 	}
+ 
+-- 
+2.30.2
+
